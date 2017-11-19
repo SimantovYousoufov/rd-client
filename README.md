@@ -1,5 +1,10 @@
 Gobrid Client
 =================
+A CLI client for RealDebrid.
+
+# Currently Supported
+1. Adding torrents via magnet link
+2. Downloading torrents
 
 # Installation
 `go install github.com/simantovyousoufov/rd-client/gobrid`

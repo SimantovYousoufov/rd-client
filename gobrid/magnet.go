@@ -15,11 +15,11 @@ import (
 
 type TorrentDownload struct {
 	statuses []string
-	done       bool
-	err        error
-	progress   int
-	link       string
-	torrent    *gobrid.Torrent
+	done     bool
+	err      error
+	progress int
+	link     string
+	torrent  *gobrid.Torrent
 }
 
 func (t *TorrentDownload) AddStatus(status string) {
@@ -34,7 +34,6 @@ type MagnetCommand struct {
 
 type MagnetCommandConfig struct {
 	client *gobrid.RealDebrid
-	//links  []string
 }
 
 func NewMagnetCommand(opts MagnetCommandConfig) *MagnetCommand {
@@ -51,6 +50,7 @@ func (m *MagnetCommand) AddLink(link string) {
 	m.links = append(m.links, link)
 }
 
+// @todo validate that links are magnet links before attempting to download them
 func (m *MagnetCommand) AddLinksFromFile(path string) error {
 	f, err := os.Open(path)
 
@@ -131,7 +131,7 @@ func (m *MagnetCommand) PrintTorrentStates() {
 		fmt.Printf("Is complete: %t\n", td.done)
 
 		if len(td.statuses) > 0 {
-			fmt.Printf("Last Status: %s\n", td.statuses[len(td.statuses) - 1])
+			fmt.Printf("Last Status: %s\n", td.statuses[len(td.statuses)-1])
 		}
 
 		fmt.Println("=============================================================")
