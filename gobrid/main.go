@@ -9,7 +9,8 @@ import (
 	"runtime"
 )
 
-// @todo clean up code
+// @todo implement a `watch` that will watch for magnet links copied to clipboard and download them
+// 		https://github.com/atotto/clipboard
 
 var clear map[string]func()
 
@@ -43,7 +44,27 @@ func ClearScreen() {
 	value()
 }
 
-func main() {
+func requireSubcommand(commands map[string]CmdContainer) {
+	if len(os.Args) < 2 {
+		fmt.Println("A subcommand is required.\n")
+		fmt.Println("Usage:\n")
+		fmt.Println("ufo command [arg1] [arg2] ...\n")
+
+		printDefaults(commands)
+
+		os.Exit(1)
+	}
+}
+
+func printDefaults(commands map[string]CmdContainer) {
+	for key, val := range commands {
+		fmt.Printf("Usage for `%s`:\n", key)
+		val.cmd.PrintDefaults()
+		fmt.Println()
+	}
+}
+
+func getTokenFromEnv() string {
 	token := os.Getenv(TOKEN_ENV)
 
 	if token == "" {
@@ -51,32 +72,44 @@ func main() {
 		os.Exit(1)
 	}
 
+	return token
+}
+
+type CmdContainer struct {
+	cmd   *flag.FlagSet
+	flags map[string]*string // @todo this won't handle other flag types
+}
+
+func initFlags() map[string]CmdContainer {
 	magnetCmd := flag.NewFlagSet("magnet", flag.ExitOnError)
 	magnetCmdFile := magnetCmd.String("f", "", "File to load with newline separated links.")
 
-	commands := map[string]*flag.FlagSet{
-		"magnet": magnetCmd,
+	return map[string]CmdContainer{
+		"magnet": {
+			cmd: magnetCmd,
+			flags: map[string]*string{
+				"f": magnetCmdFile,
+			},
+		},
 	}
+}
 
-	if len(os.Args) < 2 {
-		fmt.Println("A subcommand is required.\n")
-		fmt.Println("Usage:\n")
-		fmt.Println("ufo command [arg1] [arg2] ...\n")
+func main() {
+	token := getTokenFromEnv()
+	commands := initFlags()
 
-		for cmd, set := range commands {
-			fmt.Printf("Usage for `%s`:\n", cmd)
-			set.PrintDefaults()
-			fmt.Println()
-		}
-
-		os.Exit(1)
-	}
+	requireSubcommand(commands)
 
 	subCommand := os.Args[1]
 
 	switch subCommand {
+	case "help":
+		printDefaults(commands)
 	case "magnet":
-		magnetCmd.Parse(os.Args[2:])
+		magnetCmd := commands["magnet"]
+		magnetCmdFile := magnetCmd.flags["f"]
+
+		magnetCmd.cmd.Parse(os.Args[2:])
 
 		m := NewMagnetCommand(MagnetCommandConfig{
 			client: gobrid.NewClient(token),
@@ -91,7 +124,9 @@ func main() {
 
 		m.Download()
 	default:
-		fmt.Println("Not supported yet.")
+		fmt.Println("Unknown command.")
+
+		printDefaults(commands)
 		os.Exit(1)
 	}
 }
